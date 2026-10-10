@@ -1,0 +1,122 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model StaffUser {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String
+  name           String
+  role           String          @default("SAFETY_OFFICER") // "SAFETY_OFFICER" | "SYSTEM_ADMIN"
+  department     String          @default("Campus Safety & Student Affairs")
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  assignedCases  Case[]          @relation("AssignedOfficer")
+  statusChanges  StatusHistory[]
+  reporterUpdates ReporterUpdate[]
+  internalNotes  InternalNote[]
+  auditEvents    AuditEvent[]
+}
+
+model Case {
+  id                 String           @id // Unique non-sequential identifier like CS-2026-A8F2K1
+  trackingSecretHash String           // Hash of the secret token given once to student
+  category           String           // FAKE_PROFILE, CYBERBULLYING, IMPERSONATION, ONLINE_HARASSMENT, THREATS, CYBERSTALKING, OTHER
+  platform           String           // Instagram, Discord, Snapchat, TikTok, etc.
+  description        String
+  incidentDate       String
+  profileUrl         String?
+  isImmediateDanger  Boolean          @default(false)
+  reportingMode      String           @default("ANONYMOUS") // ANONYMOUS | IDENTIFIED
+  reporterName       String?
+  reporterEmail      String?
+  reporterPhone      String?
+  privacyNoticeAck   Boolean          @default(true)
+  status             String           @default("SUBMITTED") // SUBMITTED, UNDER_REVIEW, ADDITIONAL_INFO_REQUESTED, REFERRED_TO_AUTHORITY, ACTION_IN_PROGRESS, RESOLVED, CLOSED
+  priority           String           @default("MEDIUM")    // LOW, MEDIUM, HIGH, CRITICAL
+  assignedOfficerId  String?
+  assignedOfficer    StaffUser?       @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
+  resolutionDetails  String?
+  closedAt           DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  statusHistory      StatusHistory[]
+  reporterUpdates    ReporterUpdate[]
+  internalNotes      InternalNote[]
+  followUps          ReporterFollowUp[]
+  evidence           Evidence[]
+  auditEvents        AuditEvent[]
+}
+
+model StatusHistory {
+  id          String     @id @default(uuid())
+  caseId      String
+  case        Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  oldStatus   String
+  newStatus   String
+  changedById String?
+  changedBy   StaffUser? @relation(fields: [changedById], references: [id])
+  reason      String?
+  createdAt   DateTime   @default(now())
+}
+
+model ReporterUpdate {
+  id            String     @id @default(uuid())
+  caseId        String
+  case          Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  message       String
+  requiresInput Boolean    @default(false)
+  createdById   String?
+  createdBy     StaffUser? @relation(fields: [createdById], references: [id])
+  createdAt     DateTime   @default(now())
+}
+
+model InternalNote {
+  id          String     @id @default(uuid())
+  caseId      String
+  case        Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  content     String
+  createdById String?
+  createdBy   StaffUser? @relation(fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+model ReporterFollowUp {
+  id        String   @id @default(uuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model Evidence {
+  id           String   @id @default(uuid())
+  caseId       String
+  case         Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  originalName String
+  storedName   String
+  mimeType     String
+  fileSize     Int
+  filePath     String
+  createdAt    DateTime @default(now())
+}
+
+model AuditEvent {
+  id          String     @id @default(uuid())
+  action      String     // e.g. "CASE_SUBMITTED", "STATUS_UPDATED", "INTERNAL_NOTE_ADDED", "STAFF_LOGIN"
+  details     String
+  caseId      String?
+  case        Case?      @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  staffUserId String?
+  staffUser   StaffUser? @relation(fields: [staffUserId], references: [id], onDelete: SetNull)
+  ipAddress   String?
+  createdAt   DateTime   @default(now())
+}

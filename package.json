@@ -1,0 +1,28 @@
+{
+  "name": "campusshield",
+  "version": "1.0.0",
+  "description": "CampusShield - Privacy-First Campus Cyberbullying & Fake-Profile Reporting System",
+  "private": true,
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev": "npx concurrently -n \"SERVER,CLIENT\" -c \"blue,teal\" \"npm run dev:server\" \"npm run dev:client\"",
+    "test": "npm --prefix server run test",
+    "seed": "npm --prefix server run prisma:seed",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build",
+    "build": "npm run build:client"
+  },
+  "keywords": [
+    "campus-safety",
+    "cyberbullying",
+    "fake-profile",
+    "reporting",
+    "privacy-first"
+  ],
+  "author": "CampusShield Team",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
